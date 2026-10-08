@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Img from '../components/Img';
 import AddButton from '../components/AddButton';
@@ -53,68 +53,25 @@ export default function Home() {
   const specials = useAsync(specialsApi.list);
   const gallery = useAsync(galleryApi.list);
   const chef = useAsync(chefApi.get, null);
-  // ---- Hero carousel: auto-advances, drives the hero background + text ----
-  const slides = menu.data.slice(0, 8);
-  const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const stripRef = useRef(null);
-  const idx = slides.length ? active % slides.length : 0;
-  const cur = slides[idx] || null;
-  const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  useEffect(() => { // next slide every 5s; timer restarts after any change, pauses on hover/focus/touch
-    if (slides.length < 2 || paused || reduced) return;
-    const t = setTimeout(() => setActive((a) => (a + 1) % slides.length), 5000);
-    return () => clearTimeout(t);
-  }, [active, paused, slides.length]);
-
-  useEffect(() => { // keep the active card in view inside the strip (never scrolls the page)
-    const strip = stripRef.current; const el = strip?.children[idx];
-    if (!el) return;
-    strip.scrollTo({ left: el.offsetLeft - (strip.clientWidth - el.clientWidth) / 2, behavior: reduced ? 'auto' : 'smooth' });
-  }, [idx, slides.length]);
+  const featured = menu.data[0];
 
   return (
     <main>
-      <section className="relative min-h-[34rem] overflow-hidden bg-gradient-to-br from-royal-deep via-royal-dark to-royal px-6 pb-10 pt-16 text-white md:px-12 md:pb-44">
-        <style>{`@media (prefers-reduced-motion:no-preference){.hero-fade{animation:heroFade .7s ease both}}@keyframes heroFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}`}</style>
-
-        {/* background image of the active dish, cross-fading */}
-        {slides.map((d, i) => d.image && (
-          <img key={d.id} src={d.image} alt="" aria-hidden="true"
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${i === idx ? 'opacity-100' : 'opacity-0'}`} />
-        ))}
-        {/* royal colour gradient that fades out to reveal the image */}
-        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-royal-deep via-royal-deep/85 to-royal-deep/40 md:bg-gradient-to-r md:from-royal-deep md:via-royal-deep/80 md:to-royal/20" />
-
-        <div className="relative z-10 mx-auto max-w-6xl">
-          <div key={cur?.id ?? 'empty'} className="hero-fade min-h-[19rem] md:min-h-0">
-            <p className="text-[10px] font-medium uppercase tracking-[0.35em] text-gold">Signature selection</p>
-            <h1 className="mt-4 max-w-md font-serif text-5xl italic leading-tight md:text-7xl">{cur?.name || 'Royal Jollof Artistry'}</h1>
-            <p className="mt-4 line-clamp-3 max-w-sm text-sm italic text-violet-100/80">{cur?.description}</p>
-            {cur && <AddButton dish={cur} className="btn-gold mt-8" label="ORDER NOW" />}
-          </div>
+      <section className="relative overflow-hidden bg-gradient-to-br from-royal-deep via-royal-dark to-royal px-6 pb-44 pt-16 text-white md:px-12">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-[10px] font-medium uppercase tracking-[0.35em] text-gold">Signature selection</p>
+          <h1 className="mt-4 max-w-md font-serif text-5xl italic leading-tight md:text-7xl">{featured?.name || 'Royal Jollof Artistry'}</h1>
+          <p className="mt-4 max-w-sm text-sm italic text-violet-100/80">{featured?.description}</p>
+          {featured && <AddButton dish={featured} className="btn-gold mt-8" label="ORDER NOW" />}
         </div>
-
-        {/* carousel: in the flow on mobile (never covers the text), overlaid at the bottom on desktop */}
-        <div role="group" aria-label="Signature dishes"
-          className="relative z-10 mx-auto mt-10 max-w-6xl md:absolute md:inset-x-0 md:bottom-6 md:mt-0 md:px-12"
-          onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
-          onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}
-          onTouchStart={() => setPaused(true)} onTouchEnd={() => setTimeout(() => setPaused(false), 4000)}>
-          <div ref={stripRef} className="relative -mx-2 flex gap-3 overflow-x-auto px-2 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {slides.map((d, i) => {
-              const on = i === idx;
-              return (
-                <button key={d.id} type="button" onClick={() => setActive(i)} aria-pressed={on} aria-label={`Show ${d.name}`}
-                  className={`w-[46%] shrink-0 rounded-xl border p-2 text-left backdrop-blur transition duration-500 sm:w-[31%] md:w-[calc(25%-0.5625rem)] ${on ? 'scale-[1.03] border-gold bg-royal-deep/70 shadow-lg shadow-black/30 ring-2 ring-gold' : 'border-white/10 bg-royal-deep/50 opacity-70 hover:opacity-100'}`}>
-                  <Img src={d.image} alt="" className="h-16 w-full rounded-lg md:h-20" />
-                  <p className={`mt-1 truncate font-serif text-sm italic ${on ? 'text-gold' : ''}`}>{d.name}</p>
-                  <p className="text-[10px] text-gold">{naira(d.price)}</p>
-                </button>
-              );
-            })}
-          </div>
+        <div className="absolute inset-x-0 bottom-6 mx-auto grid max-w-6xl grid-cols-2 gap-3 px-6 md:grid-cols-4 md:px-12">
+          {menu.data.slice(0, 4).map((d) => (
+            <Link to="/menu" key={d.id} className="rounded-xl border border-white/10 bg-white/10 p-2 backdrop-blur">
+              <Img src={d.image} alt={d.name} className="h-16 w-full rounded-lg md:h-20" />
+              <p className="mt-1 truncate font-serif text-sm italic">{d.name}</p>
+              <p className="text-[10px] text-gold">{naira(d.price)}</p>
+            </Link>
+          ))}
         </div>
       </section>
 

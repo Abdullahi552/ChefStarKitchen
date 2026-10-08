@@ -78,7 +78,16 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/uploads', uploadRoutes);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
+// Override CORP only for /uploads so images can be embedded cross-origin
+app.use(
+    '/uploads',
+    (req, res, next) => {
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        next();
+    },
+    express.static(path.join(__dirname, '..', 'uploads'))
+);
 // 7. 404 handler
 app.use((req, res) => {
     res.status(404).json({ message: 'Route not found' });
