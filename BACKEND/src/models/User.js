@@ -15,7 +15,10 @@ const userSchema = new mongoose.Schema(
         phone: { type: String, trim: true },
         password: {
             type: String,
-            required: [true, 'Password is required'],
+            required: function () {
+                // Password only required if user doesn't have googleId
+                return !this.googleId;
+            },
             minlength: [8, 'Password must be at least 8 characters'],
             select: false
         },

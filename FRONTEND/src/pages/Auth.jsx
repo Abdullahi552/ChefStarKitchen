@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import GoogleButton from '../components/GoogleButton';
+import Logo from '../components/Logo';
 import { authApi } from '../api';
 import { USE_MOCK } from '../api/client';
 
@@ -9,7 +10,7 @@ function Shell({ title, sub, children, footer }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-royal-deep via-royal-dark to-royal px-4 py-10">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
-        <Link to="/" className="block text-center font-serif text-2xl italic text-gold-dark">CHEFSTAR.</Link>
+        <Link to="/" className="flex justify-center" aria-label="Chef Star Kitchen home"><Logo size={84} stacked textClass="text-gold-dark" /></Link>
         <h1 className="mt-6 font-serif text-3xl font-semibold">{title}</h1>
         <p className="text-xs text-stone-500">{sub}</p>
         {children}
@@ -89,4 +90,32 @@ export function GoogleCallback() {
       .catch(() => nav('/login?error=Google sign-in failed.', { replace: true }));
   }, []);
   return <p className="p-10 text-center text-sm text-stone-500">Signing you in…</p>;
+}
+
+// Hidden admin entry point: /admin/login (not linked anywhere on the public site)
+export function AdminLogin() {
+  const { user, login, logout } = useAuth();
+  const nav = useNavigate();
+  const [f, setF] = useState({ email: '', password: '' });
+  const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  if (user?.role === 'admin') return <Navigate to="/admin" replace />;
+  const submit = async (e) => {
+    e.preventDefault(); setError(''); setBusy(true);
+    try {
+      const u = await login(f.email, f.password);
+      if (u.role !== 'admin') { logout(); throw new Error('This account does not have administrator access.'); }
+      nav('/admin', { replace: true });
+    } catch (x) { setError(x.message); setBusy(false); }
+  };
+  return (
+    <Shell title="Admin sign in" sub="Authorized personnel only." footer={<Link to="/" className="font-semibold text-royal">Back to website</Link>}>
+      <form onSubmit={submit}>
+        <Field id="aemail" label="Email" type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} autoComplete="username" />
+        <Field id="apw" label="Password" type="password" required value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} autoComplete="current-password" />
+        {error && <p role="alert" className="mt-3 text-xs text-red-600">{error}</p>}
+        <button disabled={busy} className="btn-royal mt-6 w-full">{busy ? 'VERIFYING…' : 'SIGN IN'}</button>
+      </form>
+      {USE_MOCK && <p className="mt-4 rounded-lg bg-sand p-3 text-[11px] text-stone-600">Demo mode: chef@chefstar.kitchen / admin123</p>}
+    </Shell>
+  );
 }

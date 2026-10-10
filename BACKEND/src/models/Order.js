@@ -13,13 +13,24 @@ const itemSnapshotSchema = new mongoose.Schema(
     { _id: false }
 );
 
+const locationSchema = new mongoose.Schema(
+    {
+        lat: { type: Number, min: -90, max: 90 },
+        lng: { type: Number, min: -180, max: 180 },
+        placeId: { type: String, default: '' }
+    },
+    { _id: false }
+);
+
 const deliverySchema = new mongoose.Schema(
     {
         type: { type: String, enum: ['delivery', 'pickup'], required: true },
         name: { type: String, required: true },
         phone: { type: String, required: true },
         address: { type: String, default: '' },
-        notes: { type: String, default: '' }
+        landmark: { type: String, default: '' },
+        notes: { type: String, default: '' },
+        location: { type: locationSchema, default: null }
     },
     { _id: false }
 );
@@ -42,7 +53,15 @@ const orderSchema = new mongoose.Schema(
             enum: Object.values(ORDER_STATUS),
             default: ORDER_STATUS.NEW
         },
-        paidAt: { type: Date, default: null }
+        paidAt: { type: Date, default: null },
+        // Audit trail for status changes
+        statusHistory: [
+            {
+                status: { type: String },
+                changedAt: { type: Date, default: Date.now },
+                changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+            }
+        ]
     },
     {
         timestamps: true,

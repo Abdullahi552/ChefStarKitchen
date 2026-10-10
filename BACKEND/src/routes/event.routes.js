@@ -5,12 +5,11 @@ import { publicFormLimiter } from '../middlewares/rateLimit.middleware.js';
 
 const router = express.Router();
 
-// Public — the home page form hits this
+// Public — create only
 router.post('/', publicFormLimiter, eventController.createEvent);
 
-// Admin-only
+// Admin — read + status update only (no POST/DELETE per B5)
 router.get('/', protect, adminOnly, eventController.getEvents);
 router.put('/:id', protect, adminOnly, eventController.updateEvent);
-router.delete('/:id', protect, adminOnly, eventController.deleteEvent);
 
 export default router;

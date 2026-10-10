@@ -8,13 +8,15 @@
  *  GET  /auth/google     (browser redirect) Google OAuth, then backend redirects to
  *                        {FRONTEND}/auth/callback?token=JWT   (or ?error=message)
  * ORDERS & PAYMENT (Paystack-style redirect flow)
- *  POST /orders          {items:[{kind,id,name,price,qty}], delivery:{type,name,phone,address,notes}}
+ *  POST /orders          {items:[{kind,id,name,price,qty}], delivery:{type,name,phone,address,landmark,notes,location:{lat,lng,placeId}}}
  *                        -> {order, payment:{authorization_url, reference}}   (re-price items on the server!)
  *                        Frontend redirects the browser to authorization_url. Gateway returns user to
  *                        {FRONTEND}/payment/callback?reference=REF
  *  GET  /payments/verify/:reference                   -> order (paymentStatus 'paid'|'pending'|'failed')
  *  GET  /orders/mine                                  -> orders of the signed-in user
- *  GET  /orders (admin)  PUT /orders/:id {status}     status: new|preparing|ready|delivered|cancelled
+ *  GET  /orders (admin)  PUT /orders/:id {status}     ADMIN MAY ONLY CHANGE status: new|preparing|ready|delivered|cancelled
+ *  PUT  /orders/:id/delivery (customer, own order, only while status is 'new') {delivery:{phone,address,landmark,notes,location}}
+ *  GET  /events (admin), PUT /events/:id {status}  (admin may only change status)
  *  >> When a payment is confirmed (webhook), the BACKEND must create a sale record
  *     {date,source:'online',description,amount,method:'card',orderId}. That feeds the Finance Tracker.
  * EVENTS
@@ -46,7 +48,7 @@ function resource(name, path = `/${name}`) {
     };
   return {
     list: () => wait(db[name]),
-    create: (b) => { const item = { ...b, id: uid() }; db[name].push(item); return wait(item); },
+    create: (b) => { const item = { ...b, id: uid(), createdAt: new Date().toISOString() }; db[name].push(item); return wait(item); },
     update: (id, b) => { db[name] = db[name].map((i) => (String(i.id) === String(id) ? { ...i, ...b } : i)); return wait(b); },
     remove: (id) => { db[name] = db[name].filter((i) => String(i.id) !== String(id)); return wait(null); },
   };
@@ -92,6 +94,14 @@ export const ordersApi = {
     if (!USE_MOCK) return request('/orders/mine');
     const me = JSON.parse(localStorage.getItem('chefstar_user') || '{}');
     return wait(db.orders.filter((o) => o.userId === me.id).reverse());
+  },
+  updateDelivery: (id, delivery) => {
+    if (!USE_MOCK) return request(`/orders/${id}/delivery`, { method: 'PUT', body: { delivery } });
+    const o = db.orders.find((x) => String(x.id) === String(id));
+    if (!o) return Promise.reject(new Error('Order not found.'));
+    if (o.status !== 'new') return Promise.reject(new Error('This order is already being prepared and can no longer be edited.'));
+    o.delivery = { ...o.delivery, ...delivery };
+    return wait(o);
   },
   create: (payload) => {
     if (!USE_MOCK) return request('/orders', { method: 'POST', body: payload });

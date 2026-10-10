@@ -9,4 +9,8 @@ router.post('/register', authLimiter, authController.register);
 router.post('/login', authLimiter, authController.login);
 router.get('/me', protect, authController.getMe);
 
+// Google OAuth
+router.get('/google', authController.googleLogin);
+router.get('/google/callback', authController.googleCallback);
+
 export default router;

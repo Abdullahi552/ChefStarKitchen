@@ -6,6 +6,8 @@ import useAsync from '../components/useAsync';
 import { menuApi, specialsApi, galleryApi, chefApi, eventsApi } from '../api';
 import { naira, whatsappLink, today } from '../utils';
 
+const HERO_INTERVAL = 3000; // ms between hero slides
+
 function EventSection() {
   const blank = { name: '', phone: '', eventType: 'Wedding', date: '', guests: 20, message: '' };
   const [f, setF] = useState(blank); const [sent, setSent] = useState(null); const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
@@ -62,9 +64,9 @@ export default function Home() {
   const cur = slides[idx] || null;
   const reduced = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  useEffect(() => { // next slide every 5s; timer restarts after any change, pauses on hover/focus/touch
+  useEffect(() => { // next slide every HERO_INTERVAL ms; timer restarts after any change, pauses on hover/focus/touch
     if (slides.length < 2 || paused || reduced) return;
-    const t = setTimeout(() => setActive((a) => (a + 1) % slides.length), 5000);
+    const t = setTimeout(() => setActive((a) => (a + 1) % slides.length), HERO_INTERVAL);
     return () => clearTimeout(t);
   }, [active, paused, slides.length]);
 
@@ -82,7 +84,7 @@ export default function Home() {
         {/* background image of the active dish, cross-fading */}
         {slides.map((d, i) => d.image && (
           <img key={d.id} src={d.image} alt="" aria-hidden="true"
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-1000 ${i === idx ? 'opacity-100' : 'opacity-0'}`} />
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${i === idx ? 'opacity-100' : 'opacity-0'}`} />
         ))}
         {/* royal colour gradient that fades out to reveal the image */}
         <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-royal-deep via-royal-deep/85 to-royal-deep/40 md:bg-gradient-to-r md:from-royal-deep md:via-royal-deep/80 md:to-royal/20" />

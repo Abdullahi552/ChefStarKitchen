@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import Logo from './Logo';
 
 const links = [['Today’s Menu', '/#specials'], ['Our Cuisine', '/menu'], ['Gallery', '/#gallery'], ['Events', '/#events'], ['The Chef', '/#chef']];
 
@@ -10,8 +11,8 @@ export default function Navbar() {
   const nav = useNavigate();
   return (
     <header className="sticky top-0 z-30 bg-royal-deep text-white">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3 md:px-12">
-        <Link to="/" className="font-serif text-xl italic text-gold">CHEFSTAR.</Link>
+      <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-2.5 md:px-12">
+        <Link to="/" aria-label="Chef Star Kitchen home"><Logo size={40} badge /></Link>
         <ul className="hidden gap-7 text-[10px] font-medium uppercase tracking-widest lg:flex">
           {links.map(([l, h]) => <li key={l}><a href={h} className="hover:text-gold">{l}</a></li>)}
         </ul>
@@ -21,8 +22,7 @@ export default function Navbar() {
           </Link>
           {user ? (
             <>
-              {user.role === 'admin' && <Link to="/admin" className="hover:text-gold">Admin</Link>}
-              <Link to="/orders" className="hidden hover:text-gold sm:block">My orders</Link>
+              {user.role !== 'admin' && <Link to="/orders" className="hidden hover:text-gold sm:block">My orders</Link>}
               <button onClick={() => { logout(); nav('/'); }} className="hover:text-gold">Sign out</button>
             </>
           ) : (

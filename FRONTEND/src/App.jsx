@@ -3,13 +3,14 @@ import PublicLayout from './components/PublicLayout';
 import { RequireAuth } from './components/Guards';
 import Home from './pages/Home';
 import FullMenu from './pages/FullMenu';
-import { Login, Register, GoogleCallback } from './pages/Auth';
+import { Login, Register, GoogleCallback, AdminLogin } from './pages/Auth';
 import Cart from './pages/Cart';
 import { PaymentCallback, MockPayment } from './pages/Payment';
 import MyOrders from './pages/MyOrders';
 import AdminLayout from './pages/admin/AdminLayout';
 import Overview from './pages/admin/Overview';
-import { MenuManager, SpecialsManager, GalleryManager, OrdersManager, EventsManager } from './pages/admin/Managers';
+import { MenuManager, SpecialsManager, GalleryManager } from './pages/admin/Managers';
+import { OrdersManager, EventsManager } from './pages/admin/Inbox';
 import ChefProfile from './pages/admin/ChefProfile';
 import FinanceLayout from './pages/admin/finance/FinanceLayout';
 import FinanceDashboard from './pages/admin/finance/Dashboard';
@@ -32,7 +33,7 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/auth/callback" element={<GoogleCallback />} />
       <Route path="/payment/mock" element={<MockPayment />} />
-      <Route path="/admin/login" element={<Navigate to="/login" replace />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
       <Route element={<RequireAuth admin />}>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Overview />} />

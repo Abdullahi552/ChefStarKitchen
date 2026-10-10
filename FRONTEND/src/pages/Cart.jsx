@@ -4,13 +4,15 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { ordersApi } from '../api';
 import Img from '../components/Img';
+import AddressPicker, { addressOk } from '../components/AddressPicker';
 import { naira } from '../utils';
 
 export default function Cart() {
   const { items, setQty, total } = useCart();
   const { user } = useAuth();
   const nav = useNavigate();
-  const [d, setD] = useState({ type: 'delivery', name: user?.name || '', phone: user?.phone || '', address: '', notes: '' });
+  const [d, setD] = useState({ type: 'delivery', name: user?.name || '', phone: user?.phone || '', landmark: '', notes: '' });
+  const [addr, setAddr] = useState({ address: '', location: null });
   const [err, setErr] = useState(''); const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setD({ ...d, [k]: e.target.value });
 
@@ -24,11 +26,13 @@ export default function Cart() {
   const pay = async (e) => {
     e.preventDefault();
     if (!user) return nav('/login', { state: { from: '/cart' } });
+    const delivery = d.type === 'delivery' ? { ...d, address: addr.address, location: addr.location } : { ...d, landmark: '', address: '', location: null };
+    if (d.type === 'delivery' && !addressOk(addr)) return setErr('Please choose your delivery location: pick a suggestion, tap the map, or drag the pin.');
     setBusy(true); setErr('');
     try {
-      const { payment } = await ordersApi.create({ items: items.map(({ kind, id, name, price, qty }) => ({ kind, id, name, price, qty })), delivery: d });
+      const { payment } = await ordersApi.create({ items: items.map(({ kind, id, name, price, qty }) => ({ kind, id, name, price, qty })), delivery });
       const url = payment.authorization_url;
-      url.startsWith('/') ? nav(url) : window.location.assign(url); // gateway checkout page
+      url.startsWith('/') ? nav(url) : window.location.assign(url);
     } catch (x) { setErr(x.message); setBusy(false); }
   };
 
@@ -57,7 +61,10 @@ export default function Cart() {
           <button type="button" key={t} onClick={() => setD({ ...d, type: t })} className={`flex-1 rounded-full border py-2 text-xs uppercase tracking-widest ${d.type === t ? 'border-royal bg-royal text-white' : 'border-violet-200'}`}>{t}</button>))}</div>
         <div><label className="label" htmlFor="c-name">Name</label><input id="c-name" required className="input" value={d.name} onChange={set('name')} /></div>
         <div><label className="label" htmlFor="c-phone">Phone</label><input id="c-phone" type="tel" required className="input" value={d.phone} onChange={set('phone')} /></div>
-        {d.type === 'delivery' && <div><label className="label" htmlFor="c-addr">Delivery address</label><textarea id="c-addr" required rows={2} className="input" value={d.address} onChange={set('address')} /></div>}
+        {d.type === 'delivery' && (<>
+          <AddressPicker value={addr} onChange={setAddr} />
+          <div><label className="label" htmlFor="c-land">Landmark / house details (optional)</label><input id="c-land" className="input" value={d.landmark} onChange={set('landmark')} placeholder="e.g. Blue gate, 2nd floor" /></div>
+        </>)}
         <div><label className="label" htmlFor="c-notes">Notes (optional)</label><input id="c-notes" className="input" value={d.notes} onChange={set('notes')} /></div>
         <div className="flex justify-between border-t border-violet-100 pt-4 text-sm"><span>Total</span><span className="font-serif text-2xl font-semibold">{naira(total)}</span></div>
         {err && <p role="alert" className="text-xs text-red-600">{err}</p>}
